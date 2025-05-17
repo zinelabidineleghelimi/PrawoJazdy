@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Driving School Trainer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    /* NO OUTER SCROLL */
+    html, body {
+      height:100%; margin:0; overflow:hidden!important;
+      font-family:'Segoe UI',sans-serif; background:#eef2f5;
+    }
+    .section-card {
+      position:absolute; top:0; left:0; right:0; bottom:0;
+      display:flex; justify-content:center; align-items:center;
+      padding:1rem; overflow:hidden!important;
+      opacity:0; pointer-events:none; transition:opacity .4s;
+    }
+    .section-card.active { opacity:1; pointer-events:auto; }
+
+    /* INNER WRAPPER */
+    .inner {
+      width:100%; max-width:700px; height:100%;
+      display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+    }
+
+    h1,h2,h4 { font-size:clamp(1.25rem,2.5vh+0.5rem,2rem); }
+    .btn-modern {
+      padding:1rem 2rem; border-radius:2rem;
+      font-size:clamp(0.9rem,1.5vh+0.2rem,1.2rem);
+      box-shadow:0 4px 12px rgba(0,0,0,0.1);
+      transition:transform .2s;
+    }
+    .btn-modern:hover { transform:translateY(-3px); }
+
+    .form-control, .form-select {
+      padding:.75rem 1rem; border-radius:1rem;
+      font-size:clamp(0.9rem,1.2vh+0.2rem,1rem);
+    }
+
+    /* QUIZ CARD */
+    #quizContainer .card {
+      display:flex; flex-direction:column; height:100%;
+      border-radius:1rem; overflow:hidden;
+    }
+    #quizContainer .card-header {
+      padding:1rem 1.5rem; background:#fff; border-bottom:none;
+    }
+    #quizContainer .card-body {
+      flex:1; overflow-y:auto; padding:1rem 1.5rem;
+    }
+    #quizContainer .card-body::-webkit-scrollbar { display:none; }
+    #quizContainer .card-body { -ms-overflow-style:none; scrollbar-width:none; }
+    #quizContainer .card-footer {
+      padding:1rem 1.5rem; background:#fff; border-top:none;
+      text-align:right;
+    }
+
+    /* MEDIA */
+    #mediaDisplay {
+      display:flex; justify-content:center; margin-bottom:1rem;
+    }
+    #mediaDisplay img, #mediaDisplay video {
+      max-width:100%; max-height:35vh; border-radius:.75rem;
+    }
+
+    /* ANSWERS & PROGRESS */
+    .btn-answer {
+      width:100%; margin-bottom:.75rem; text-align:left;
+      font-size:clamp(0.9rem,1.2vh+0.2rem,1rem);
+    }
+    #progressText { font-weight:600; }
+    #progressBar { height:.75rem; border-radius:.5rem; }
+
+    /* RESULTS */
+    #resultsContainer .inner {
+      overflow-y:auto; padding:1rem 0;
+    }
+    #resultsContainer .inner::-webkit-scrollbar { display:none; }
+    #resultsContainer .inner { -ms-overflow-style:none; scrollbar-width:none; }
+    .review-item {
+      width:100%; max-width:600px; margin:1rem auto;
+      padding:1rem; background:#fff; border-radius:.5rem;
+      box-shadow:0 1px 4px rgba(0,0,0,0.1);
+    }
+    .review-item.incorrect { border-left:5px solid #dc3545; }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- LOGIN -->
+    <div id="loginSection" class="section-card active">
+      <div class="inner text-center">
+        <h1 class="mb-4">🚦 Welcome</h1>
+        <input id="username" class="form-control mb-3" placeholder="Your Name" />
+        <select id="licenseType" class="form-select mb-4">
+          <option value="" disabled selected>Select License Category</option>
+          <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+          <option value="D">D</option><option value="T">T</option><option value="AM">AM</option>
+          <option value="A1">A1</option><option value="A2">A2</option>
+          <option value="B1">B1</option><option value="C1">C1</option><option value="D1">D1</option>
+        </select>
+        <button id="loginBtn" class="btn btn-primary btn-modern">Start</button>
+      </div>
+    </div>
+
+    <!-- MODE SELECT -->
+    <div id="modeSelection" class="section-card">
+      <div class="inner text-center">
+        <h1 class="mb-4">Hello, <span id="displayName"></span></h1>
+        <button id="learnMode" class="btn btn-success btn-modern me-3 mb-2">Learning Mode</button>
+        <button id="examMode"  class="btn btn-danger btn-modern mb-2">Exam Mode</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardSection" class="section-card">
+      <div class="inner">
+        <h2 class="mb-4">📋 Dashboard</h2>
+        <p>Name: <strong><span id="dashUserName"></span></strong></p>
+        <p>Category: <strong><span id="dashLicenseType"></span></strong></p>
+        <p>Allowed vehicles: <strong><span id="dashVehicles"></span></strong></p>
+        <p>Total questions: <strong><span id="dashTotalCount">0</span></strong></p>
+        <p>Correct so far: <strong><span id="dashCorrectCount">0</span></strong></p>
+        <div class="mt-4 text-center">
+          <button id="dashStartBtn" class="btn btn-primary btn-modern me-3">Choose Set</button>
+          <button id="dashBackBtn"  class="btn btn-secondary btn-modern">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SET SELECTION -->
+    <div id="collectionSelection" class="section-card">
+      <div class="inner text-center">
+        <h2 class="mb-2">📚 Select a Set</h2>
+        <p id="setInfo"></p>
+        <div id="collectionsContainer"></div>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quizContainer" class="section-card">
+      <div class="inner">
+        <div class="card shadow-lg">
+          <div class="card-header d-flex justify-content-between flex-wrap">
+            <h4 id="questionText" style="flex:1;"></h4>
+            <select id="language" class="form-select form-select-sm w-auto mt-1">
+              <option value="en">EN</option><option value="pl">PL</option>
+              <option value="de">DE</option><option value="ua">UA</option>
+              <option value="fr">FR</option><option value="ru">RU</option>
+              <option value="ar">AR</option><option value="fa">FA</option>
+              <option value="ka">KA</option><option value="tg">TG</option>
+            </select>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-3">
+              <span id="progressText"></span>
+              <span id="timer" class="text-danger">⏱️ <span id="timeLeft">30</span>s</span>
+            </div>
+            <div class="progress mb-4">
+              <div id="progressBar" class="progress-bar bg-primary" style="width:0%"></div>
+            </div>
+            <div id="mediaDisplay"></div>
+            <div id="answersContainer"></div>
+            <div id="feedback" class="text-center fw-bold fs-5 mt-3"></div>
+          </div>
+          <div class="card-footer">
+            <button id="nextBtn" class="btn btn-primary btn-modern">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="resultsContainer" class="section-card">
+      <div class="inner">
+        <div class="card shadow-lg p-4">
+          <h2>Results for <span id="userDisplay"></span></h2>
+          <!-- PASS/FAIL SUMMARY -->
+          <div id="resultsSummary" class="mb-3"></div>
+          <!-- REVIEW LIST -->
+          <div id="reviewList"></div>
+          <div class="text-center mt-4">
+            <button id="restartBtn" class="btn btn-secondary btn-modern">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let questions = [], current = 0, answered = false, userAnswers = [], score = 0;
+      let userName = '', license = '', mode = 'learn', lang = 'en', timeLeft = 30, timerId;
+
+      const qs = id => document.getElementById(id);
+      const sections = [
+        'loginSection','modeSelection','dashboardSection',
+        'collectionSelection','quizContainer','resultsContainer'
+      ];
+      function show(id) {
+        sections.forEach(s =>
+          qs(s).classList.toggle('active', s === id)
+        );
+      }
+
+      function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+      }
+
+      function getText(obj) {
+        if (!obj) return '';
+        if (obj[lang]) return obj[lang];
+        return obj.en || '';
+      }
+
+      const vehicleMap = {
+        A:'Motorcycles',B:'Cars',C:'Trucks',D:'Buses',
+        T:'Tractors',AM:'Mopeds',A1:'Light MC',A2:'Medium MC',
+        B1:'Quadricycles',C1:'Light Trucks',D1:'Minibuses'
+      };
+
+      // LOGIN → MODE
+      qs('loginBtn').onclick = () => {
+        userName = qs('username').value.trim();
+        license = qs('licenseType').value;
+        if (!userName) { alert('Enter name'); return; }
+        if (!license)  { alert('Select license'); return; }
+        qs('displayName').innerText = userName;
+        show('modeSelection');
+      };
+
+      // MODE → DASHBOARD
+      qs('learnMode').onclick = () => { mode='learn'; setupDashboard(); show('dashboardSection'); };
+      qs('examMode').onclick  = () => { mode='exam';  setupDashboard(); show('dashboardSection'); };
+
+      function setupDashboard() {
+        qs('dashUserName').innerText    = userName;
+        qs('dashLicenseType').innerText = license;
+        qs('dashVehicles').innerText    = vehicleMap[license]||license;
+        qs('dashTotalCount').innerText  = '0';
+        qs('dashCorrectCount').innerText= '0';
+      }
+      qs('dashBackBtn').onclick  = () => show('modeSelection');
+      qs('dashStartBtn').onclick = () => { show('collectionSelection'); loadSets(); };
+
+      // LOAD SETS
+      async function loadSets() {
+        const pool = await fetch('questions.json').then(r=>r.json());
+        const filt = pool.filter(q=>q.categories.includes(license));
+        const yn   = filt.filter(q=>q.type==='yes_no');
+        const mc   = filt.filter(q=>q.type==='multiple_choice');
+        shuffle(yn); shuffle(mc);
+
+        qs('setInfo').className = 'text-secondary';
+        qs('setInfo').innerText = `${yn.length} Yes/No and ${mc.length} MCQ available`;
+
+        const cont = qs('collectionsContainer'); cont.innerHTML = '';
+        const sets = Math.min(
+          Math.floor(yn.length/20),
+          Math.floor(mc.length/12)
+        );
+        if (sets<1) {
+          qs('setInfo').className = 'text-danger';
+          qs('setInfo').innerText = '⚠️ Not enough questions';
+          return;
+        }
+        for (let i=0; i<sets; i++) {
+          const slice=[...yn.slice(i*20,i*20+20), ...mc.slice(i*12,i*12+12)];
+          shuffle(slice);
+          const btn=document.createElement('button');
+          btn.className='btn btn-outline-primary btn-modern';
+          btn.innerText=`Set ${i+1}`;
+          btn.onclick=()=>startSet(slice,i+1);
+          cont.appendChild(btn);
+        }
+      }
+
+      function startSet(arr,setIdx) {
+        questions=arr; current=0; score=0; userAnswers=[];
+        show('quizContainer'); showQuestion(setIdx);
+      }
+
+      qs('nextBtn').onclick = () => {
+        if (mode==='learn') nextQ();
+        else if (answered) nextQ();
+      };
+
+      function showQuestion(setIdx) {
+        answered=false; clearInterval(timerId);
+        const q = questions[current];
+        qs('questionText').innerText = getText(q.question);
+        qs('feedback').innerText      = '';
+
+        qs('dashTotalCount').innerText   = questions.length;
+        qs('dashCorrectCount').innerText = score;
+
+        // media
+        const md = qs('mediaDisplay'); md.innerHTML='';
+        if (q.media) {
+          const ext=q.media.split('.').pop().toLowerCase(), url=`media/${q.media}`;
+          if (['jpg','jpeg','png','gif'].includes(ext)) {
+            md.innerHTML=`<img src="${url}">`;
+          } else if (['mp4','webm','ogg'].includes(ext)) {
+            md.innerHTML=`<video autoplay muted playsinline>
+                            <source src="${url}" type="video/${ext}">
+                          </video>`;
+          }
+        }
+
+        const ac = qs('answersContainer'); ac.innerHTML='';
+        for (let [k,ans] of Object.entries(q.answers||{})) {
+          const t = getText(ans); if(!t) continue;
+          const b = document.createElement('button');
+          b.className = 'btn btn-outline-secondary btn-answer';
+          b.innerText = `${k}: ${t}`;
+          b.onclick = ()=> selectAnswer(k);
+          ac.appendChild(b);
+        }
+
+        if (mode==='exam') {
+          qs('timer').style.display='block';
+          timeLeft=30; qs('timeLeft').innerText=timeLeft;
+          timerId=setInterval(()=>{
+            if(--timeLeft<=0) { clearInterval(timerId); nextQ(); }
+            qs('timeLeft').innerText=timeLeft;
+          },1000);
+        } else {
+          qs('timer').style.display='none';
+        }
+
+        qs('progressText').innerText = `Set ${setIdx} — Q${current+1}/${questions.length}`;
+        qs('progressBar').style.width = `${(current/questions.length)*100}%`;
+      }
+
+      function selectAnswer(k) {
+        if (answered) return;
+        answered=true; clearInterval(timerId);
+        userAnswers[current]=k; const corr=questions[current].correct;
+        if (k===corr) score++;
+        document.querySelectorAll('.btn-answer').forEach(b=>{
+          const c=b.innerText[0];
+          if (c===corr) b.classList.replace('btn-outline-secondary','correct');
+          else if (c===k) b.classList.replace('btn-outline-secondary','incorrect');
+          if (mode==='exam') b.disabled=true;
+        });
+        if (mode==='learn') {
+          qs('feedback').innerText = k===corr
+            ? '✅ Correct!'
+            : `❌ Wrong. Ans: ${corr}`;
+        }
+      }
+
+      function nextQ() {
+        current++;
+        if (current>=questions.length) return showResults();
+        showQuestion(Math.floor(current/32)+1);
+      }
+
+      function showResults() {
+        show('resultsContainer');
+        qs('userDisplay').innerText=userName;
+        const total=questions.length, passMark=30, passed=score>=passMark;
+        const pct=Math.round(score/total*100);
+
+        qs('resultsSummary').innerHTML=`
+          <div class="alert alert-${passed?'success':'danger'} text-center fs-5">
+            Score: <strong>${score}/${total}</strong> —
+            <strong>${passed?'Passed 🎉':'Failed ❌'}</strong>
+            (${pct}%)
+          </div>`;
+
+        const rl=qs('reviewList'); rl.innerHTML='';
+        questions.forEach((q,i)=>{
+          if (userAnswers[i]!==q.correct) {
+            const d=document.createElement('div');
+            d.className='review-item incorrect';
+            d.innerHTML=`
+              <p><strong>Q${q.id}:</strong> ${getText(q.question)}</p>
+              <p>Your: ${userAnswers[i]||'None'}</p>
+              <p>Correct: ${q.correct}</p>`;
+            rl.appendChild(d);
+          }
+        });
+        if (!rl.childElementCount) {
+          const p=document.createElement('p');
+          p.innerText='No mistakes! Well done!';
+          rl.appendChild(p);
+        }
+      }
+
+      qs('restartBtn').onclick=()=> show('collectionSelection');
+      qs('language').addEventListener('change',e=>{
+        lang=e.target.value;
+        showQuestion(Math.floor(current/32)+1);
+      });
+    });
+  </script>
+</body>
+</html>

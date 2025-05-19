@@ -20,7 +20,18 @@ An open-source, client-side **Driving School Trainer** web app for quizzing user
    cd driving-school-trainer
    ```
 
-2. **⚙️ Serve Locally**
+2. **📥 Download Media Assets**
+
+   Place all required images and MP4 videos into the `/media` folder. You can download the complete media package from Google Drive:
+
+   ```
+   https://drive.google.com/file/d/13HRerzbuwIoDhIZXHZfzRhXahKCDjvMm/view?usp=drive_link
+   ```
+
+   After downloading, extract the files into the `media` directory so that filenames match those referenced in `questions.json`.
+
+3. **⚙️ Serve Locally**
+
    Use Python's built-in HTTP server:
 
    ```bash
@@ -29,20 +40,20 @@ An open-source, client-side **Driving School Trainer** web app for quizzing user
 
    Navigate to `http://localhost:8000` in your browser.
 
-3. **🛠️ Customize Questions**
+4. **🛠️ Customize Questions**
 
-   * Place your `questions.json` and media files in the project root (`/media` folder).
+   * Place your `questions.json` in the project root.
    * Ensure each question object has:
 
      ```json
      {
        "id": 99,
        "question": { "en": "...", "pl": "...", ... },
-       "answers": { "A": {"en":"Yes","pl":"Tak"}, "B": {...} },
+       "answers": { "A": { "en": "Yes", "pl": "Tak" }, "B": { ... } },
        "correct": "A",
        "type": "yes_no", // or "multiple_choice"
        "media": "AK_D05_06_org.mp4",
-       "categories": ["A","B1",...] 
+       "categories": ["A","B1",...]
      }
      ```
 
@@ -54,7 +65,7 @@ We ❤️ contributions! Feel free to:
 * 🌿 Create a branch for your feature or bugfix
 * 🔀 Submit a pull request
 
-Please follow standard GitHub workflow and ensure your changes maintain the code style and pass manual testing.
+Please follow the standard GitHub workflow and ensure your changes maintain code style and pass manual testing.
 
 ## 📄 License
 
